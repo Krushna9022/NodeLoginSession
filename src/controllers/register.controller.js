@@ -76,7 +76,17 @@ exports.updateProfile=async(req,res)=>{
     }catch(err)
     {
         res.send("error"+err)
-    }
+    }  
+}
+
+exports.logoutUser=(req,res)=>{
+    req.session.destroy((err)=>{
+        if(err){
+            console.log("err")
+        }else{
+            res.redirect("/signin");
+        }
+    })
     
 }
 // $2b$10$mPUFtsWC3VE6Z8UR0.IujelGcN3LLTdIjAd31tCa2y1f9281nfjo6

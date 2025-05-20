@@ -10,6 +10,7 @@ router.get('/signup',navController.singup)
 router.get('/signin',navController.signin)
 router.get('/updateProfile',userController.viewProfiledetail)
 router.post('/updateprofile',userController.updateProfile)
+router.get("/logout",userController.logoutUser)
 module.exports=router;
 
 
