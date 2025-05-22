@@ -50,3 +50,16 @@ exports.updateProfile=(...user)=>{
         })
     })
 }
+
+exports.viewProfileByCookie=(usercookie)=>{
+    return new Promise((res,rej)=>{
+        conn.query("select * from user where username=?",[usercookie],(err,result)=>{
+            if(err)
+               {
+                rej(err)
+               } else{
+                res(result)
+               }
+        })
+    })
+}

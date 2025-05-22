@@ -1,96 +1,114 @@
-const bcrypt=require('bcrypt')
-const regservice = require('../services/register.servive')
-const usermodel = require("../models/register.model")
+const bcrypt = require("bcrypt");
+const regservice = require("../services/register.servive");
+const usermodel = require("../models/register.model");
 
 exports.registerUser = async (req, res) => {
-    const {name, email, contact, username, password } =   req.body
-    const saltRound=10;
-    const hashpassword= await bcrypt.hash(password,saltRound)
-    console.log(name+" "+email+" "+password);
-    let msg = await regservice.acceptuser(name, email, contact, username, hashpassword)
-    console.log(msg)
-    res.render("navbar.ejs",{message:msg});
+    const { name, email, contact, username, password } = req.body;
+    const saltRound = 10;
+    const hashpassword = await bcrypt.hash(password, saltRound);
+    console.log(name + " " + email + " " + password);
+    let msg = await regservice.acceptuser(
+        name,
+        email,
+        contact,
+        username,
+        hashpassword
+    );
+    console.log(msg);
+    res.render("navbar.ejs", { message: msg });
     // res.end();
-}
+};
 
 exports.ValidateUser = async (req, res) => {
-
+    let usercookie = req.cookies.username;
+    console.log(usercookie);
+    if (usercookie && usercookie !== "undefined") {
+        try {
+            const result = await usermodel.viewProfileByCookie(usercookie);
+            if (result.length > 0) {
+                return res.render("Dashboard.ejs", { user: result[0].name });
+            }
+        } catch (err) {
+            console.log("Error with cookie-based login:", err);
+            // continue to standard login
+        }
+    }
     try {
         const { username, password } = req.body;
-       
-         console.log(username+" "+password)
-        let result = await usermodel.Uservalidate(username)
-       
+
+        // console.log(username+" "+password)
+        let result = await usermodel.Uservalidate(username);
+
         if (result.length > 0) {
-            let match=await bcrypt.compare(password,result[0].password)
-            console.log(result)
-            if(match)
-            {
-                req.session.uid=result[0].id;
-               // console.log(req.session.uid);
-            res.render("Dashboard.ejs",{user:result[0].name})
-            
-            }else{
-                res.render("Validate.ejs",{message:"wrong password enter valid password"})
+            let match = await bcrypt.compare(password, result[0].password);
+            console.log(result);
+            if (match) {
+                req.session.uid = result[0].id;
+                res.cookie("username", result[0].username, {
+                    maxAge: 60 * 60 * 24 * 365 * 1000,
+                });
+                // console.log(req.session.uid);
+                res.render("Dashboard.ejs", { user: result[0].name });
+            } else {
+                res.render("Validate.ejs", {
+                    message: "wrong password enter valid password",
+                });
             }
         } else {
             console.log(result);
-            res.status(401).send("user not found")
+            res.status(401).send("user not found");
         }
     } catch (err) {
-        console.log(err)
+        console.log(err);
         res.status(500).send("Internal server error");
     }
-}
+};
 
-exports.viewProfiledetail=async(req,res)=>{
-    let userid=req.session.uid;
-    //console.log()
-    //console.log(userid)
-    try{
-        let result=await usermodel.getUserProfile(userid);
-        if(result.length>0)
-        {
-            res.render("UpdateProfile.ejs",{user:result});
-        }else
-        {
+exports.viewProfiledetail = async (req, res) => {
+    let userid = req.session.uid;
+
+    try {
+        let result = await usermodel.getUserProfile(userid);
+        if (result.length > 0) {
+            res.render("UpdateProfile.ejs", { user: result });
+        } else {
             res.send("invalid");
         }
-
-    }catch(err)
-    {
-        res.status(500).send("internal server error"+err)
+    } catch (err) {
+        res.status(500).send("internal server error" + err);
     }
-    
-    
-}
+};
 
-exports.updateProfile=async(req,res)=>{
-    let userid=req.session.uid;
-    const{name,email,contact,username,password}=req.body
-    try{
-        let saltRound=10;
-        let hashpassword=await bcrypt.hash(password,saltRound)
-        let result=await usermodel.updateProfile(name,email,contact,username,hashpassword,userid);
-        res.render("Dashboard.ejs",{user:name})
-    }catch(err)
-    {
-        res.send("error"+err)
-    }  
-}
+exports.updateProfile = async (req, res) => {
+    let userid = req.session.uid;
+    const { name, email, contact, username, password } = req.body;
+    try {
+        let saltRound = 10;
+        let hashpassword = await bcrypt.hash(password, saltRound);
+        let result = await usermodel.updateProfile(
+            name,
+            email,
+            contact,
+            username,
+            hashpassword,
+            userid
+        );
+        res.render("Dashboard.ejs", { user: name });
+    } catch (err) {
+        res.send("error" + err);
+    }
+};
 
-exports.logoutUser=(req,res)=>{
-    req.session.destroy((err)=>{
-        if(err){
-            console.log("err")
-        }else{
+exports.logoutUser = (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.log("err");
+        } else {
+            res.clearCookie("username");
             res.redirect("/signin");
         }
-    })
-    
-}
+    });
+};
 // $2b$10$mPUFtsWC3VE6Z8UR0.IujelGcN3LLTdIjAd31tCa2y1f9281nfjo6
 
 // $2b$10$.MUPmyhVAj.cFPAfyHb9R.2sp4qH0apRfDkewN8nHCxCHt25JQe3e
-
-
